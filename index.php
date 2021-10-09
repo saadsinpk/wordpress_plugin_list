@@ -8,16 +8,21 @@ Author URI: http://sidtechno.com
 */
 
 // function that runs when shortcode is called
-function sidtechnno_plugin_list($attrs) { 
+function sidtechnno_plugin_list($attrs) {
 	if(isset($attrs['category']) AND !empty($attrs['category'])) {
+		echo 'test-'.$attrs['category'];
 	    $args = array(  
 	        'post_type' => 'plugin_lists',
 	        'post_status' => 'publish',
 	        'posts_per_page' => -1, 
 	        'orderby' => 'title', 
-	        'relation' => 'AND',
-	        'plugin_list_category'=>$attrs['category'],
-	        'order' => 'ASC', 
+			    'tax_query' => array(
+			        array(
+			            'taxonomy' => 'plugin_list_category',
+			            'field'    => 'slug',
+			            'terms'    => $attrs['category']
+			        )
+			      )
 	    );
 	} else {
 	    $args = array(  
@@ -64,13 +69,14 @@ function sidtechnno_plugin_list($attrs) {
             <th>تفعيل</th>
             <th></th>
         </tr>';
+        $count = 1;
 	    while ( $loop->have_posts() ) : $loop->the_post(); 
 		    $plugin_name = esc_attr( get_post_meta( get_the_ID(), 'sidtechno_select_plugin', true ) );
 	    	$feat_image = wp_get_attachment_url( get_post_thumbnail_id(get_the_ID()) );
 
 	    	$html .= '<tr id="payment-gateway-'.get_the_title().'" class="wsd-payment-gateway payment-gateway-method-'.get_the_title().'            wsd-payment-gateway-row-4">
                 <td class="number">
-					4                </td>
+					'.$count.'                </td>
                 <td>';
                 if(!empty($feat_image)) {
 					$html .= '<img src="'.$feat_image.'" alt="'.get_the_title().'" class="img-responsive" style="max-width:157px;max-height:50px;">';
@@ -78,8 +84,9 @@ function sidtechnno_plugin_list($attrs) {
                 $html .= '</td><td class="title">
 					'.get_the_title().'		
                 </td>
-                <td class="status">
-	                                <div class="wsd-toggler">
+                <td class="status">';
+                if(!empty($plugin_name) AND $plugin_name != 'Select Plugin') {
+	                               $html .= '<div class="wsd-toggler">
                 <input id="toggler-'.get_the_ID().'" type="checkbox" class="wsd-toggler-input wsd-plugin-controller-toggle" data-plugin-slug="'.$plugin_name.'" ';
 				if ( is_plugin_active($plugin_name) ) {
 					$html .= 'data-state="deactivate" checked=""';
@@ -91,18 +98,52 @@ function sidtechnno_plugin_list($attrs) {
                     <span class="check-handler wsd-toggler-handler"></span>
                 </label>
                 <img src="https://wkala.myinnoshop.com/wp-content/mu-plugins/plugins-controller//spinner.svg" class="wsd-loading" alt="loading">
-                </div>                </td>
+                </div>';
+                }                $html .='</td>
                 <td class="moderate">
 
 		';
 
-			if(!empty(esc_attr( get_post_meta( get_the_ID(), 'sidtechno_option_url', true ) ))) {
-												$html .= '<a href="'.esc_attr( get_post_meta( get_the_ID(), 'sidtechno_option_url', true ) ).'" class="wsd-payment-popup-button wsd-save-field" >
-								إدارة							</a>';
+			if(!empty($plugin_name) AND $plugin_name != 'Select Plugin') {
+				if(is_plugin_active($plugin_name)) {
+					if(!empty(esc_attr( get_post_meta( get_the_ID(), 'sidtechno_option_url', true ) ))) {
+						$option_urls = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_url', true ));
+						$option_name = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_name', true ));
+
+						foreach ($option_urls as $option_key => $option_value) {
+							if(!empty($option_value)) {
+													$html .= '<a href="'.$option_value.'" class="wsd-payment-popup-button wsd-save-field" >'.$option_name[$option_key].'</a>';
+								}
+						}
+					}
+				} else {
+					if(!empty(esc_attr( get_post_meta( get_the_ID(), 'sidtechno_option_url', true ) ))) {
+						$option_urls = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_url', true ));
+						$option_name = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_name', true ));
+
+						foreach ($option_urls as $option_key => $option_value) {
+							if(!empty($option_value)) {
+													$html .= '<a href="'.$option_value.'" class="wsd-payment-popup-button wsd-save-field" style="display:none;">'.$option_name[$option_key].'</a>';
+								}
+						}
+					}
+				}
+			} else {
+				if(!empty(esc_attr( get_post_meta( get_the_ID(), 'sidtechno_option_url', true ) ))) {
+					$option_urls = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_url', true ));
+					$option_name = json_decode(get_post_meta( get_the_ID(), 'sidtechno_option_name', true ));
+
+					foreach ($option_urls as $option_key => $option_value) {
+						if(!empty($option_value)) {
+									$html .= '<a href="'.$option_value.'" class="wsd-payment-popup-button wsd-save-field" >'.$option_name[$option_key].'</a>';
+							}
+					}
+				}
 			}
 
 						                $html .= '</td>
             </tr>';
+      $count++;
 	    endwhile;
 
     $html .= '</tbody></table></div>'; 
@@ -115,8 +156,10 @@ function sidtechnno_plugin_list($attrs) {
 		var plugin_slug = jQuery(this).attr("data-plugin-slug");
 		var plugin_state = jQuery(this).attr("data-state");
 		if(plugin_state == "deactivate") {
+			jQuery(this).closest("tr").find(".wsd-payment-popup-button").hide();
 			jQuery(this).attr("data-state","activate");
 		} else {
+			jQuery(this).closest("tr").find(".wsd-payment-popup-button").show();
 			jQuery(this).attr("data-state","deactivate");
 		}
 		wp.ajax.post( "get_data", {"plugin_id":plugin_slug,"plugin_state":plugin_state} )
@@ -241,31 +284,52 @@ function sidtechno_post_class_meta_box( $post ) {
 	wp_nonce_field( basename( __FILE__ ), 'sidtechno_post_class_nonce' );
 	$all_plugins = get_plugins();
 	$selected_plugin = esc_attr( get_post_meta( $post->ID, 'sidtechno_select_plugin', true ) );
+	$option_urls = get_post_meta( $post->ID, 'sidtechno_option_url', true );
+	$option_name = get_post_meta( $post->ID, 'sidtechno_option_name', true );
+	$pass_true = 0;
+	if(!empty($option_urls)) {
+		$pass_true = 1;
+		$option_urls = json_decode($option_urls);
+		$option_name = json_decode($option_name);
+	}
 	echo '<p>
 		<label for="sidtechno-select-plugin">Select Plugin</label>
 		<br />
 		<select name="sidtechno_select_plugin" class="widefat" id="select_plugin">
-			<option>Select Plugin</option>';
+			<option value="">Select Plugin</option>';
 			foreach ($all_plugins as $key => $value) {
 				echo '<option '; if($selected_plugin == $key) { echo 'selected'; } echo ' value="'.$key.'" data-value="'.$value['Name'].'">'.$value['Name'].'</option>';
 			}
 		echo '</select>
 		<br />
 
-		<label for="sidtechno-option-url">Plugin Option URL</label>
-		<br />
-	    <input class="widefat" type="text" name="sidtechno_option_url" id="sidtechno_option_url" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_url', true ) ).'" size="30" />
+		<label for="sidtechno-option-url">Plugin Option URL <span id="add_more_option" style="font-size:24px;">+</span></label>
+		<br />';
+			if($pass_true == 1) {
+				foreach ($option_urls as $url_key => $url_value) {
+		    	echo '<input class="widefat" type="text" name="sidtechno_option_url[]" id="sidtechno_option_url" value="'.$url_value.'" size="30" placeholder="Option Url" />';
+		    	echo '<input class="widefat" type="text" name="sidtechno_option_name[]" id="sidtechno_option_name" value="'.$option_name[$url_key].'" size="30" placeholder="Option Name" />';
+				}
+			} else {
+	    	echo '<input class="widefat" type="text" name="sidtechno_option_url[]" id="sidtechno_option_url" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_url', true ) ).'" size="30" placeholder="Option Url" />';
+	    	echo '<input class="widefat" type="text" name="sidtechno_option_name[]" id="sidtechno_option_name" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_name', true ) ).'" size="30" placeholder="Option Url" />';
+			}
+	    echo '<div id="display_option_array"></div>
 	</p>';
 }
 
 function custom_admin_js() {
 	echo '	<script>
 		jQuery( document ).ready(function() {
-			console.log("test");
 			jQuery( "#select_plugin" ).change(function() {
 				jQuery("#title").val(jQuery(this).find(":selected").attr("data-value"));
 				jQuery("#title").closest("#titlewrap").find("#title-prompt-text").addClass("screen-reader-text");
 			});
+			jQuery( "#add_more_option" ).click(function() {
+				jQuery("#display_option_array").append(\'<input class="widefat" type="text" name="sidtechno_option_url[]" id="sidtechno_option_url" value="" size="30" placeholder="Option URL" /><input class="widefat" type="text" name="sidtechno_option_name[]" id="sidtechno_option_name" value="" size="30" placeholder="Option Name" /><br>\');
+			});
+
+
 		});
 	</script>';
 }
@@ -288,9 +352,20 @@ function sidtechno_save_post_class_meta( $post_id, $post ) {
 
   $new_sidtechno_select_plugin = ( isset( $_POST['sidtechno_select_plugin'] ) ? $_POST['sidtechno_select_plugin'] : ’ );
   $sidtechno_select_plugin = 'sidtechno_select_plugin';
-
+  if($sidtechno_select_plugin == 'Select Plugin') {
+  	$sidtechno_select_plugin = '';
+  }
   $new_sidtechno_option_url = ( isset( $_POST['sidtechno_option_url'] ) ? $_POST['sidtechno_option_url'] : ’ );
-  $sidtechno_option_url = 'sidtechno_option_url';
+  if(!empty($new_sidtechno_option_url)) {
+  	$new_sidtechno_option_url = json_encode($new_sidtechno_option_url);
+  }
+  $sidtechno_option_name = 'sidtechno_option_name';
+  $new_sidtechno_option_name = ( isset( $_POST['sidtechno_option_name'] ) ? $_POST['sidtechno_option_name'] : ’ );
+  if(!empty($new_sidtechno_option_name)) {
+  	$new_sidtechno_option_name = json_encode($new_sidtechno_option_name);
+  }
+  $sidtechno_option_name = 'sidtechno_option_name';
+
 
   /* Get the meta value of the custom field key. */
   $meta_value = get_post_meta( $post_id, $sidtechno_select_plugin, true );
@@ -306,6 +381,22 @@ function sidtechno_save_post_class_meta( $post_id, $post ) {
   /* If there is no new meta value but an old value exists, delete it. */
   elseif ( ’ == $new_sidtechno_select_plugin && $meta_value )
     delete_post_meta( $post_id, $sidtechno_select_plugin, $meta_value );
+
+
+  /* Get the meta value of the custom field key. */
+  $meta_value = get_post_meta( $post_id, $sidtechno_option_name, true );
+
+  /* If a new meta value was added and there was no previous value, add it. */
+  if ( $new_sidtechno_option_name && ’ == $meta_value )
+    add_post_meta( $post_id, $sidtechno_option_name, $new_sidtechno_option_name, true );
+
+  /* If the new meta value does not match the old value, update it. */
+  elseif ( $new_sidtechno_option_name && $new_sidtechno_option_name != $meta_value )
+    update_post_meta( $post_id, $sidtechno_option_name, $new_sidtechno_option_name );
+
+  /* If there is no new meta value but an old value exists, delete it. */
+  elseif ( ’ == $new_sidtechno_option_name && $meta_value )
+    delete_post_meta( $post_id, $sidtechno_option_name, $meta_value );
 
 
   /* Get the meta value of the custom field key. */
