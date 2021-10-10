@@ -312,7 +312,7 @@ function sidtechno_post_class_meta_box( $post ) {
 				}
 			} else {
 	    	echo '<input class="widefat" type="text" name="sidtechno_option_url[]" id="sidtechno_option_url" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_url', true ) ).'" size="30" placeholder="Option Url" />';
-	    	echo '<input class="widefat" type="text" name="sidtechno_option_name[]" id="sidtechno_option_name" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_name', true ) ).'" size="30" placeholder="Option Url" />';
+	    	echo '<input class="widefat" type="text" name="sidtechno_option_name[]" id="sidtechno_option_name" value="'.esc_attr( get_post_meta( $post->ID, 'sidtechno_option_name', true ) ).'" size="30" placeholder="Option Name" />';
 			}
 	    echo '<div id="display_option_array"></div>
 	</p>';
@@ -351,18 +351,23 @@ function sidtechno_save_post_class_meta( $post_id, $post ) {
     return $post_id;
 
   $new_sidtechno_select_plugin = ( isset( $_POST['sidtechno_select_plugin'] ) ? $_POST['sidtechno_select_plugin'] : ’ );
+
   $sidtechno_select_plugin = 'sidtechno_select_plugin';
   if($sidtechno_select_plugin == 'Select Plugin') {
   	$sidtechno_select_plugin = '';
   }
+  
+  $sidtechno_option_url = 'sidtechno_option_url';
   $new_sidtechno_option_url = ( isset( $_POST['sidtechno_option_url'] ) ? $_POST['sidtechno_option_url'] : ’ );
+
   if(!empty($new_sidtechno_option_url)) {
   	$new_sidtechno_option_url = json_encode($new_sidtechno_option_url);
   }
+
   $sidtechno_option_name = 'sidtechno_option_name';
   $new_sidtechno_option_name = ( isset( $_POST['sidtechno_option_name'] ) ? $_POST['sidtechno_option_name'] : ’ );
   if(!empty($new_sidtechno_option_name)) {
-  	$new_sidtechno_option_name = json_encode($new_sidtechno_option_name);
+  	$new_sidtechno_option_name = json_encode($new_sidtechno_option_name, JSON_UNESCAPED_UNICODE);
   }
   $sidtechno_option_name = 'sidtechno_option_name';
 
